@@ -3,13 +3,14 @@
  SYSTEM INCLUDES
 **************/
 var	http = require('http');
-var sys = require('sys');
 var	async = require('async');
 var sanitizer = require('sanitizer');
 var compression = require('compression');
 var express = require('express');
+var moment = require('moment');
 var conf = require('./config.js').server;
 var ga = require('./config.js').googleanalytics;
+//var util = require('util');
 
 /**************
  LOCAL INCLUDES
@@ -106,7 +107,7 @@ function scrub( text ) {
 io.sockets.on('connection', function (client) {
 
 	client.on('message', function( message ){
-		//console.log(message.action + " -- " + sys.inspect(message.data) );
+		//console.log(message.action + " -- " + util.inspect(message.data) );
 
 		var clean_data = {};
 		var clean_message = {};
@@ -302,36 +303,52 @@ io.sockets.on('connection', function (client) {
 				broadcastToRoom( client, { action: 'setBoardSize', data: size } );
 				break;
 
-			case 'exportTxt':
-				exportBoard( 'txt', client, message.data );
-				break;
-
-			case 'exportCsv':
-				exportBoard( 'csv', client, message.data );
-				break;
-
-			case 'exportJson':
-				exportJson( client, message.data );
-				break;
+//			case 'exportTxt':
+//				exportBoard( 'txt', client, message.data );
+//				break;
+//
+//			case 'exportCsv':
+//				exportBoard( 'csv', client, message.data );
+//				break;
+//
+//			case 'exportJson':
+//				exportJson( client, message.data );
+//				break;
 
 			case 'importJson':
 				importJson( client, message.data );
 				break;
 
-			case 'createRevision':
-				createRevision( client, message.data );
+//			case 'createRevision':
+//				createRevision( client, message.data );
+//				break;
+//
+//			case 'deleteRevision':
+//				deleteRevision( client, message.data );
+//				break;
+//
+//			case 'exportRevision':
+//				exportRevision( client, message.data );
+//				break;
+//
+			case 'createSnapshot':
+				createSnapshot( client, message.data );
 				break;
 
-			case 'deleteRevision':
-				deleteRevision( client, message.data );
+			case 'restoreSnapshot':
+				restoreSnapshot( client, message.data );
 				break;
 
-			case 'exportRevision':
-				exportRevision( client, message.data );
+			case 'deleteSnapshot':
+				deleteSnapshot( client, message.data );
+				break;
+
+			case 'exportSnapshot':
+				exportSnapshot( client, message.data );
 				break;
 
 			default:
-				//console.log('unknown action');
+				console.log('Unknown action received: ' + message.action);
 				break;
 		}
 	});
@@ -343,9 +360,6 @@ io.sockets.on('connection', function (client) {
   //tell all others that someone has connected
   //client.broadcast('someone has connected');
 });
-
-
-
 
 
 
@@ -378,12 +392,20 @@ function initClient ( client )
 			);
 		});
 
-
 		db.getRevisions( room, function (revisions) {
 			client.json.send(
 				{
 					action: 'initRevisions',
 					data: (revisions !== null) ? Object.keys(revisions) : new Array()
+				}
+			);
+		});
+
+		db.getAllSnapshots( room, function (snapshots) {
+			client.json.send(
+				{
+					action: 'initSnapshots',
+					data: (snapshots !== null) ? Object.keys(snapshots) : new Array()
 				}
 			);
 		});
@@ -528,6 +550,7 @@ function cleanAndInitializeDemoRoom()
 	});
 }
 
+/*
 // Export board in txt or csv
 function exportBoard( format, client, data )
 {
@@ -660,18 +683,20 @@ function exportJson( client, data )
 		});
 	});
 }
+*/
 
 // Import board from json
 function importJson( client, data )
 {
 	getRoom(client, function(room) {
+		console.log('Import board from file: '+data.filename+" to room: "+room);
 		db.clearRoom(room, function() {
 			db.getAllCards( room , function (cards) {
 				for (var i = 0; i < cards.length; i++) {
 					db.deleteCard ( room, cards[i].id );
 				}
 
-				cards      = data.cards;
+				cards      = data.json.cards;
 				var cards2 = new Array();
 				for (var i = 0; i < cards.length; i++) {
 					var card = cards[i];
@@ -702,7 +727,7 @@ function importJson( client, data )
 					db.deleteColumn(room);
 				}
 
-				columns      = data.columns;
+				columns      = data.json.columns;
 				var columns2 = new Array();
 				for (var i = 0; i < columns.length; i++) {
 					var column = scrub(columns[i]);
@@ -716,7 +741,7 @@ function importJson( client, data )
 				client.json.send(msg);
 			});
 
-			var size = data.size;
+			var size = data.json.size;
 			if (size.width !== undefined && size.height !== undefined) {
 				size = { width: scrub(size.width), height: scrub(size.height) };
 				db.setBoardSize( room, size );
@@ -725,10 +750,10 @@ function importJson( client, data )
 				client.json.send(msg);
 			}
 
-			data.theme = scrub(data.theme);
-			if (data.theme === 'smallcards' || data.theme === 'bigcards') {
-				db.setTheme( room, data.theme );
-				msg = { action: 'changeTheme', data: data.theme };
+			var theme = scrub(data.json.theme);
+			if (theme === 'smallcards' || theme === 'bigcards') {
+				db.setTheme( room, theme );
+				msg = { action: 'changeTheme', data: theme };
 				broadcastToRoom(client, msg);
 				client.json.send(msg);
 			}
@@ -736,7 +761,7 @@ function importJson( client, data )
 	});
 }
 //
-
+/*
 function createRevision( client, data )
 {
 	var result = new Array();
@@ -768,7 +793,41 @@ function createRevision( client, data )
 		});
 	});
 }
+*/
 
+function createSnapshot( client, data )
+{
+	var result = new Array();
+	getRoom(client, function(room) {
+		db.getAllCards( room , function (cards) {
+			db.getAllColumns ( room, function (columns) {
+				db.getTheme( room, function(theme) {
+					db.getBoardSize( room, function(size) {
+						if (theme === null) theme = 'bigcards';
+						if (size === null) size = { width: data.width, height: data.height };
+						var timestamp = Date.now();
+						result = {
+							timestamp: timestamp,
+							cards: cards,
+							columns: columns,
+							theme: theme,
+							size: size
+						};
+
+						// Add snapshot to database
+						db.createSnapshot(room, timestamp, result);
+						// Broadcast to all clients
+						msg = { action: 'addSnapshot', data: timestamp };
+						broadcastToRoom(client, msg);
+						client.json.send(msg);
+					});
+				});
+			});
+		});
+	});
+}
+
+/*
 function deleteRevision( client, timestamp )
 {
 	getRoom(client, function(room) {
@@ -783,7 +842,112 @@ function deleteRevision( client, timestamp )
 		});
 	});
 }
+*/
 
+function deleteSnapshot( client, timestamp )
+{
+	getRoom(client, function(room) {
+		db.deleteSnapshot(room, timestamp);
+		msg = { action: 'deleteSnapshot', data: timestamp };
+		broadcastToRoom(client, msg);
+		client.json.send(msg);
+	});
+}
+
+// Restoe a previously created snapshot
+function restoreSnapshot( client, timestamp)
+{
+	getRoom(client, function(room) {
+		db.getSnapshot( room, timestamp, function(data) {
+			console.log( "Restore board snapshot dated: " + moment(timestamp).format("YYYY-MM-DD HH:mm:ss") +' to room:' + room);
+			db.clearRoom(room, function() {
+				db.getAllCards( room , function (cards) {
+					for (var i = 0; i < cards.length; i++) {
+						db.deleteCard ( room, cards[i].id ); 
+					}
+
+					cards      = data.cards;
+					var cards2 = new Array();
+					for (var i = 0; i < cards.length; i++) {
+						var card = cards[i];
+						if (card.id         !== undefined && card.colour !== undefined
+							&& card.rot     !== undefined && card.x      !== undefined
+							&& card.y       !== undefined && card.text   !== undefined
+							&& card.sticker !== undefined) {
+							var c = {
+								id:      card.id,
+								colour:  card.colour,
+								rot:     card.rot,
+								x:       card.x,
+								y:       card.y,
+								text:    scrub(card.text),
+								sticker: card.sticker
+							};
+							db.createCard(room, c.id, c);
+							cards2.push(c);
+						}
+					}
+					var msg = { action: 'initCards', data: cards2 };
+					broadcastToRoom(client, msg);
+					client.json.send(msg);
+				});
+
+				db.getAllColumns ( room, function (columns) {
+					for (var i = 0; i < columns.length; i++) {
+						db.deleteColumn(room);
+					}
+
+					columns      = data.columns;
+					var columns2 = new Array();
+					for (var i = 0; i < columns.length; i++) {
+						var column = scrub(columns[i]);
+						if (typeof(column) === 'string') {
+							db.createColumn(room, column);
+							columns2.push(column);
+						}
+					}
+					msg = { action: 'initColumns', data: columns2 };
+					broadcastToRoom(client, msg);
+					client.json.send(msg);
+				});
+
+				var size = data.size;
+				if (size.width !== undefined && size.height !== undefined) {
+					size = { width: scrub(size.width), height: scrub(size.height) };
+					db.setBoardSize( room, size );
+					msg = { action: 'setBoardSize', data: size };
+					broadcastToRoom(client, msg);
+					client.json.send(msg);
+				}
+
+				data.theme = scrub(data.theme);
+				if (data.theme === 'smallcards' || data.theme === 'bigcards') {
+					db.setTheme( room, data.theme );
+					msg = { action: 'changeTheme', data: data.theme };
+					broadcastToRoom(client, msg);
+					client.json.send(msg);
+				}
+			});
+		});
+	});
+}
+
+function exportSnapshot ( client, timestamp )
+{
+	getRoom(client, function(room) {
+		db.getSnapshot( room, timestamp, function(snapshot) {
+			client.json.send({
+				action: 'export',
+				data: {
+					filename: room.replace('/', '')+'-'+moment(timestamp).format("YYYY-MM-DD_HHmmss")+'.json',
+					text: JSON.stringify(snapshot)
+				}
+			});
+		});
+	});
+}
+
+/*
 function exportRevision ( client, timestamp )
 {
 	getRoom(client, function(room) {
@@ -809,6 +973,8 @@ function exportRevision ( client, timestamp )
 		});
 	});
 }
+*/
+
 /**************
  SETUP DATABASE ON FIRST RUN
 **************/

@@ -168,9 +168,24 @@ function getMessage(m) {
             }
             break;
 
+        case 'addSnapshot':
+            addSnapshot(message.data);
+            break;
+
+        case 'deleteSnapshot':
+            $('#snapshot-'+message.data).remove();
+            break;
+
+        case 'initSnapshots':
+            $('#snapshots-list').empty();
+            for (var i = 0; i < message.data.length; i++) {
+                addSnapshot(message.data[i]);
+            }
+            break;
+
         default:
             //unknown message
-            alert('unknown action: ' + JSON.stringify(message));
+            alert('Unknown action recieved: ' + JSON.stringify(message));
             break;
     }
 
@@ -724,11 +739,12 @@ function addRevision(timestamp) {
     if (typeof(timestamp) === 'string') {
         timestamp = parseInt(timestamp);
     }
-    s1.text(moment(timestamp).format('LLLL'));
+    s1.text(moment(timestamp).format('YYYY-MM-DD HH:mm:ss'));
 
     li.append(s1);
     li.append(s2);
-    $('#revisions-list').append(li);
+    //Add in reveresed chronological order
+    $('#revisions-list').prepend(li);
 
     s1.click(function() {
         socket.json.send({
@@ -744,6 +760,52 @@ function addRevision(timestamp) {
     });
 }
 
+function addSnapshot(timestamp) {
+    var li = $('<li id="snapshot-'+timestamp+'"></li>');
+    var s1 = $('<span></span>');
+    var s2 = $('<img src="../images/icons/iconic/raster/black/trash_stroke_12x12.png" alt="Delete snapshot">');
+    var s3 = $('<img src="../images/icons/iconic/raster/black/arrow_down_12x12.png" alt="Download snapshot">');
+    if (typeof(timestamp) === 'string') {
+        timestamp = parseInt(timestamp);
+    }
+    s1.text(moment(timestamp).format('YYYY-MM-DD HH:mm:ss'));
+
+    li.append(s1);
+    li.append(s2);
+    li.append(s3);
+    //Add in reveresed chronological order
+    $('#snapshots-list').prepend(li);
+
+    s1.click(function() {
+        socket.json.send({
+            action: 'restoreSnapshot',
+            data: timestamp
+        });
+    });
+    s2.click(function() {
+        socket.json.send({
+            action: 'deleteSnapshot',
+            data: timestamp
+        });
+    });
+    s3.click(function() {
+        socket.json.send({
+            action: 'exportSnapshot',
+            data: timestamp
+        });
+    });
+
+    var opt = $('<option value="snapshot-'+timestamp+'">'+moment(timestamp).format('YYYY-MM-DD HH:mm:ss')+'</option>');
+    $('#select-menu').prepend(opt);
+}
+
+function importSnapshot() {
+    var importFilename = $('#import-dialog').dialog().find( "input:file").val();
+    console.log( importDialog);
+    alert("@importSnapshot says: "+importDialog);
+    $('#import-dialog').dialog("close");
+    return true;
+}
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
 
@@ -832,15 +894,12 @@ $(function() {
 
     var user_name = getCookie('scrumscrum-username');
 
-
-
     $("#yourname-input").focus(function() {
         if ($(this).val() == 'unknown') {
             $(this).val("");
         }
 
         $(this).addClass('focused');
-
     });
 
     $("#yourname-input").blur(function() {
@@ -957,4 +1016,67 @@ $(function() {
             }
         });
     })
+
+    $('#create-snapshot').click(function() {
+        socket.json.send({
+            action: 'createSnapshot',
+            data: {
+                width: $('.board-outline').css('width').replace('px', ''),
+                height: $('.board-outline').css('height').replace('px', '')
+            }
+        });
+    })
+
+var importDialog = $('#import-dialog').dialog({
+        autoOpen: false,
+        height: 200,
+        width: 500,
+        modal: true,
+        buttons: {
+            "Import": function(evt) {
+                evt.stopPropagation();
+                evt.preventDefault();
+        
+                var f = $('#import-dialog').dialog().find( "input:file").get(0).files[0];
+                console.log( f);
+                if( typeof f !== 'undefined') {
+                    var fr = new FileReader();
+                    fr.onloadend = function() {
+                        var text = fr.result;
+                        socket.json.send({
+                            action: 'importJson',
+                            data: {
+                                filename: f.name,
+                                json: JSON.parse(text)
+                            }
+                        });
+                    };
+                    fr.readAsBinaryString(f);
+                } else {
+                    alert("No file selected, you need to select a JSON file before clicking on the Import button");
+                }
+                
+                importDialog.dialog( "close" );
+            },
+            Cancel: function() {
+                importDialog.dialog( "close" );
+            }
+        },
+        close: function() {
+            importDialog.find("form")[0].reset();
+        }
+})
+
+var importForm = importDialog.find("form").on("submit", function( evt) {
+    evt.preventDefault();
+    importSnapshot();
+})
+
+$('#import-snapshot').click(function() {
+    importDialog.dialog("open");
+})
+
+//  $('#select-menu').selectmenu({
+//      icons: { button: "ui-icon-caret-1-s" }
+//  });
 });

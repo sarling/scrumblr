@@ -213,7 +213,28 @@ h2 {
 	float: left;
 }
 
-.names {
+.buttons select {
+	 padding: 0 0 4 0;
+	 border: none;
+	 outline: 0;
+	 width: 160px;
+	 height: 16px;
+	 background: -webkit-gradient(linear, left top, left 25, from(#FFFFFF), color-stop(4%, #EEEEEE), to(#FFFFFF));
+	 background: -moz-linear-gradient(top, #FFFFFF, #EEEEEE 1px, #FFFFFF 25px);
+ 
+	 background: none;
+	 border-radius: 10px;
+	 color: #666;
+	 text-align: right;
+	 font-family:  "Helvetica Neue Light", "HelveticaNeue-Light", 'Helvetica Neue', arial, serif;
+	 font-size: 14px;
+	 /*letter-spacing: 4px;*/
+	 margin:0;
+ 
+	 position: relative;
+ }
+ 
+ .names {
 	padding-left: 10px;
 	width: 980px;
 	text-align: right;
@@ -286,6 +307,22 @@ xopacity: .5;
 	letter-spacing: 2px;
 }
 
+#import-dialog {
+	background-color: #f3f3f3;
+}
+
+#import-dialog fieldset {
+	padding:0; 
+	border:0; 
+	margin-top:25px;
+}
+
+#import-dialog fieldset input {
+	display: block;
+	margin-bottom: 12px;
+	padding: .4em;
+	width: 95%;
+}
 
 #user-icon {
 	vertical-align: text-top;
@@ -625,5 +662,11 @@ img {
     cursor: pointer;
 }
 #revisions-list li img {
+    margin-left: 10px;
+}
+#snapshots-list li > * {
+    cursor: pointer;
+}
+#snapshots-list li img {
     margin-left: 10px;
 }
