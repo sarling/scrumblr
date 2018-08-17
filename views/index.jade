@@ -12,15 +12,15 @@ block body
 	div.board-outline
 		div#board
 			div#board-doodles
-			image#marker(src='images/marker.png')
-			image#eraser(src='images/eraser.png')
+			img#marker(src='images/marker.png')
+			img#eraser(src='images/eraser.png')
 
 
 			table#board-table.board-table
 				tr
 					td#icon-col(width='1%')
-						image#add-col.col-icon(width='20', height='20', src='images/icons/iconic/raster/black/plus_alt_32x32.png')
-						image#delete-col.col-icon(width='20', height='20', src='images/icons/iconic/raster/black/minus_alt_32x32.png')
+						img#add-col.col-icon(width='20', height='20', src='images/icons/iconic/raster/black/plus_alt_32x32.png')
+						img#delete-col.col-icon(width='20', height='20', src='images/icons/iconic/raster/black/minus_alt_32x32.png')
 
 
 	div.buttons
@@ -75,6 +75,21 @@ block body
 			fieldset
 				input(type="file")#import-input
 
+	div(title="Card properties")#properties-dialog
+		form
+			fieldset
+				label(for="properties-card-id") Card identity
+				input(name="id", disabled="disabled")#properties-card-id
+			fieldset#properties-fieldset
+				label(for="properties-card-priority") Priority
+				select(name="priority")#properties-card-priority
+					option 1
+					option 2
+					option 3
+					option 4
+					option 5
+				label(for="properties-card-assignto") Assign to
+				input(name="assignto")#properties-card-assignto
 
 	//div.import
 	//	h3 Import board

@@ -214,6 +214,33 @@ io.sockets.on('connection', function (client) {
 
 				break;
 
+			case 'cardPropertiesGet':
+
+				getRoom( client, function(room) {
+					db.getCardProperties ( room, scrub(message.data.id), function() {
+						
+					});
+				});
+
+				break;
+
+			case 'cardPropertiesSet':
+				var cardid = scrub(message.data.id);
+				getRoom( client, function(room) {
+					db.cardSetProperties ( room, cardid, message.data.properties);
+				});
+
+				message_out = {
+					action: 'updateProperties',
+					data: {
+						id: cardid,
+						properties: message.data.properties
+					}
+				};
+
+				broadcastToRoom(client, message_out);
+				break;
+
 			case 'createColumn':
 				clean_message = { data: scrub(message.data) };
 
@@ -349,6 +376,7 @@ io.sockets.on('connection', function (client) {
 
 			default:
 				console.log('Unknown action received: ' + message.action);
+				console.log( message.data);
 				break;
 		}
 	});
@@ -392,11 +420,20 @@ function initClient ( client )
 			);
 		});
 
-		db.getRevisions( room, function (revisions) {
+		//db.getRevisions( room, function (revisions) {
+		//	client.json.send(
+		//		{
+		//			action: 'initRevisions',
+		//			data: (revisions !== null) ? Object.keys(revisions) : new Array()
+		//		}
+		//	);
+		//});
+
+		db.getAllProperties( room, function (properties) {
 			client.json.send(
 				{
-					action: 'initRevisions',
-					data: (revisions !== null) ? Object.keys(revisions) : new Array()
+					action: 'initProperties',
+					data: (properties !== null) ? properties : new Array()
 				}
 			);
 		});
@@ -496,7 +533,8 @@ function createCard( room, id, text, x, y, rot, colour ) {
 		x: x,
 		y: y,
 		text: text,
-		sticker: null
+		sticker: null,
+		properties: null
 	};
 
 	db.createCard(room, id, card);
@@ -700,18 +738,19 @@ function importJson( client, data )
 				var cards2 = new Array();
 				for (var i = 0; i < cards.length; i++) {
 					var card = cards[i];
-					if (card.id         !== undefined && card.colour !== undefined
-						&& card.rot     !== undefined && card.x      !== undefined
-						&& card.y       !== undefined && card.text   !== undefined
-						&& card.sticker !== undefined) {
+					if (card.id      !== undefined && card.colour     !== undefined &&
+						card.rot     !== undefined && card.x          !== undefined &&
+						card.y       !== undefined && card.text       !== undefined &&
+						card.sticker !== undefined && card.properties !== undefined ) {
 						var c = {
-							id:      card.id,
-							colour:  card.colour,
-							rot:     card.rot,
-							x:       card.x,
-							y:       card.y,
-							text:    scrub(card.text),
-							sticker: card.sticker
+							id:         card.id,
+							colour:     card.colour,
+							rot:        card.rot,
+							x:          card.x,
+							y:          card.y,
+							text:       scrub(card.text),
+							sticker:    card.sticker,
+							properties: card.properties
 						};
 						db.createCard(room, c.id, c);
 						cards2.push(c);
@@ -870,18 +909,19 @@ function restoreSnapshot( client, timestamp)
 					var cards2 = new Array();
 					for (var i = 0; i < cards.length; i++) {
 						var card = cards[i];
-						if (card.id         !== undefined && card.colour !== undefined
-							&& card.rot     !== undefined && card.x      !== undefined
-							&& card.y       !== undefined && card.text   !== undefined
-							&& card.sticker !== undefined) {
+						if (card.id      !== undefined && card.colour     !== undefined &&
+							card.rot     !== undefined && card.x          !== undefined &&
+							card.y       !== undefined && card.text       !== undefined &&
+							card.sticker !== undefined && card.properties !== undefined ) {
 							var c = {
-								id:      card.id,
-								colour:  card.colour,
-								rot:     card.rot,
-								x:       card.x,
-								y:       card.y,
-								text:    scrub(card.text),
-								sticker: card.sticker
+								id:         card.id,
+								colour:     card.colour,
+								rot:        card.rot,
+								x:          card.x,
+								y:          card.y,
+								text:       scrub(card.text),
+								sticker:    card.sticker,
+								properties: card.properties
 							};
 							db.createCard(room, c.id, c);
 							cards2.push(c);

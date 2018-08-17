@@ -74,7 +74,7 @@ function getMessage(m) {
     var action = message.action;
     var data = message.data;
 
-    //console.log('<-- ' + action);
+    //console.log('Processing message: ' + JSON.stringify(message));
 
     switch (action) {
         case 'roomAccept':
@@ -98,7 +98,7 @@ function getMessage(m) {
         case 'createCard':
             //console.log(data);
             drawNewCard(data.id, data.text, data.x, data.y, data.rot, data.colour,
-                null);
+                null, null, null);
             break;
 
         case 'deleteCard':
@@ -138,49 +138,60 @@ function getMessage(m) {
             break;
 
         case 'nameChangeAnnounce':
-            updateName(message.data.sid, message.data.user_name);
+            updateName(data.sid, data.user_name);
             break;
 
         case 'addSticker':
-            addSticker(message.data.cardId, message.data.stickerId);
+            addSticker(data.cardId, data.stickerId);
             break;
 
         case 'setBoardSize':
-            resizeBoard(message.data);
+            resizeBoard(data);
             break;
 
         case 'export':
-            download(message.data.filename, message.data.text);
+            download(data.filename, data.text);
             break;
 
-        case 'addRevision':
-            addRevision(message.data);
-            break;
+        //case 'addRevision':
+        //    addRevision(message.data);
+        //    break;
 
-        case 'deleteRevision':
-            $('#revision-'+message.data).remove();
-            break;
+        //case 'deleteRevision':
+        //    $('#revision-'+message.data).remove();
+        //    break;
 
-        case 'initRevisions':
-            $('#revisions-list').empty();
-            for (var i = 0; i < message.data.length; i++) {
-                addRevision(message.data[i]);
-            }
-            break;
+        //case 'initRevisions':
+        //    $('#revisions-list').empty();
+        //    for (var i = 0; i < message.data.length; i++) {
+        //        addRevision(message.data[i]);
+        //    }
+        //    break;
 
         case 'addSnapshot':
-            addSnapshot(message.data);
+            addSnapshot(data);
             break;
 
         case 'deleteSnapshot':
-            $('#snapshot-'+message.data).remove();
+            $('#snapshot-'+data).remove();
             break;
 
         case 'initSnapshots':
             $('#snapshots-list').empty();
-            for (var i = 0; i < message.data.length; i++) {
-                addSnapshot(message.data[i]);
+            for (var i = 0; i < data.length; i++) {
+                addSnapshot(data[i]);
             }
+            break;
+
+        case 'initProperties':
+            $('#properties-fieldset').empty();
+            for (var i = 0; i < data.length; i++) {
+                addProperty(data[i]);
+            }
+            break;
+
+        case 'updateProperties':
+            $('#' +data.id).data( 'properties', data.properties);
             break;
 
         default:
@@ -196,14 +207,15 @@ $(document).bind('keyup', function(event) {
     keyTrap = event.which;
 });
 
-function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
+function drawNewCard(id, text, x, y, rot, colour, sticker, properties, animationspeed) {
     //cards[id] = {id: id, text: text, x: x, y: y, rot: rot, colour: colour};
 
     var h = '<div id="' + id + '" class="card ' + colour +
         ' draggable" style="-webkit-transform:rotate(' + rot +
         'deg);\
 	">\
-	<img src="images/icons/token/Xion.png" class="card-icon delete-card-icon" />\
+	<img src="images/icons/iconic/raster/black/x_14x14.png" class="card-icon delete-card-icon" />\
+	<img src="images/icons/iconic/raster/black/calendar_16x16.png" class="card-icon card-properties-icon" />\
 	<img class="card-image" src="images/' +
         colour + '-card.png">\
 	<div id="content:' + id +
@@ -224,6 +236,11 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
     // card.click( function() {
     // 	$(this).focus();
     // } );
+
+    // save the properties as object data
+    if( typeof(properties) != 'undefined') {
+        $('#' +id).data( 'properties', properties);
+    }
 
     card.draggable({
         snap: false,
@@ -322,6 +339,25 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, animationspeed) {
         }
     );
 
+    card.children('.card-properties-icon').click(
+        function() {
+            //console.log( $("#" + id));
+            var cardId = $(this).parent().attr('id');
+            $("#properties-card-id").val( cardId);
+            $("#properties-dialog").dialog("option", "title", "Properties for card: "+cardId);
+            // restore saved values
+            properties = $('#' + id).data('properties');
+            if( typeof(properties) != 'undefined') {
+                for( var i in properties) {
+                    for( var pname in properties[i]) {
+                        $('#properties-card-'+ pname).val( properties[i][pname]);
+                    }
+                }
+            }
+            $("#properties-dialog").dialog("open");
+        }
+    );
+
     card.children('.content').editable(function(value, settings) {
         onCardChange(id, value);
         return (value);
@@ -383,7 +419,7 @@ function addSticker(cardId, stickerId) {
 // cards
 //----------------------------------
 function createCard(id, text, x, y, rot, colour) {
-    drawNewCard(id, text, x, y, rot, colour, null);
+    drawNewCard(id, text, x, y, rot, colour, null, null, null);
 
     var action = "createCard";
 
@@ -426,6 +462,7 @@ function initCards(cardArray) {
             card.rot,
             card.colour,
             card.sticker,
+            card.properties,
             0
         );
     }
@@ -732,33 +769,33 @@ function download(filename, text) {
     document.body.removeChild(element);
 }
 
-function addRevision(timestamp) {
-    var li = $('<li id="revision-'+timestamp+'"></li>');
-    var s1 = $('<span></span>');
-    var s2 = $('<img src="../images/stickers/sticker-deletestar.png" alt="delete revision">');
-    if (typeof(timestamp) === 'string') {
-        timestamp = parseInt(timestamp);
-    }
-    s1.text(moment(timestamp).format('YYYY-MM-DD HH:mm:ss'));
-
-    li.append(s1);
-    li.append(s2);
-    //Add in reveresed chronological order
-    $('#revisions-list').prepend(li);
-
-    s1.click(function() {
-        socket.json.send({
-            action: 'exportRevision',
-            data: timestamp
-        });
-    });
-    s2.click(function() {
-        socket.json.send({
-            action: 'deleteRevision',
-            data: timestamp
-        });
-    });
-}
+//function addRevision(timestamp) {
+//    var li = $('<li id="revision-'+timestamp+'"></li>');
+//    var s1 = $('<span></span>');
+//    var s2 = $('<img src="../images/stickers/sticker-deletestar.png" alt="delete revision">');
+//    if (typeof(timestamp) === 'string') {
+//        timestamp = parseInt(timestamp);
+//    }
+//    s1.text(moment(timestamp).format('YYYY-MM-DD HH:mm:ss'));
+//
+//    li.append(s1);
+//    li.append(s2);
+//    //Add in reveresed chronological order
+//    $('#revisions-list').prepend(li);
+//
+//    s1.click(function() {
+//        socket.json.send({
+//            action: 'exportRevision',
+//            data: timestamp
+//        });
+//    });
+//    s2.click(function() {
+//        socket.json.send({
+//            action: 'deleteRevision',
+//            data: timestamp
+//        });
+//    });
+//}
 
 function addSnapshot(timestamp) {
     var li = $('<li id="snapshot-'+timestamp+'"></li>');
@@ -805,6 +842,40 @@ function importSnapshot() {
     alert("@importSnapshot says: "+importDialog);
     $('#import-dialog').dialog("close");
     return true;
+}
+
+
+function addProperty(data) {
+    var label = $('<label for="properties-card-'+data.propid+'">'+data.label+'</label>');
+    var input;
+    switch (data.type) {
+        case 'input-text':
+            input = $('<input type="text" name="'+data.propid+'" id="properties-card-'+data.propid+'" />')
+            break;
+
+        case 'input-radio':
+            input = $('<input type="radio" name="'+data.propid+'" id="properties-card-'+data.propid+'" />')
+            break;
+
+        case 'input-checkbox':
+            input = $('<input type="checkbox" name="'+data.propid+'" id="properties-card-'+data.propid+'" />')
+            break;
+
+        case 'select':
+            input = $('<select name="'+data.propid+'" id="properties-card-'+data.propid+'" />')
+            for( var i in data.opts) {
+                input.append($('<option value="'+data.opts[i].value+'">'+data.opts[i].text+'</option>'))
+            }
+            input.append($('</select>'))
+            break;
+
+        default:
+            console.log('Unknown property type:' +data.type);
+            break;
+    }
+    $("#properties-fieldset").append( label);
+    $("#properties-fieldset").append( input);
+
 }
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -1039,7 +1110,7 @@ var importDialog = $('#import-dialog').dialog({
         
                 var f = $('#import-dialog').dialog().find( "input:file").get(0).files[0];
                 console.log( f);
-                if( typeof f !== 'undefined') {
+                if( typeof f != 'undefined') {
                     var fr = new FileReader();
                     fr.onloadend = function() {
                         var text = fr.result;
@@ -1074,6 +1145,49 @@ var importForm = importDialog.find("form").on("submit", function( evt) {
 
 $('#import-snapshot').click(function() {
     importDialog.dialog("open");
+})
+
+// Hidden dialog for update card properties
+var propertiesDialog = $('#properties-dialog').dialog({
+    autoOpen: false,
+    height: 400,
+    width: 500,
+    modal: true,
+    buttons: {
+        "Save": function(evt) {
+            evt.stopPropagation();
+            evt.preventDefault();
+
+            // get form data
+            var data = {};
+            data.id = '';
+            data.properties = [];
+            $("#properties-dialog :input").each(function() {
+                if($(this).attr("name").length > 0) {
+                    if($(this).attr("name") === 'id') {
+                        data.id = $(this).val();
+                    } else {
+                        var prop = {};
+                        prop[$(this).attr("name")] = $(this).val();
+                        data.properties.push( prop);
+                    }
+                }
+            });
+                        
+            socket.json.send({
+                action: 'cardPropertiesSet',
+                data: data
+            });
+            $('#' +data.id).data( 'properties', data.properties);
+            propertiesDialog.dialog( "close" );
+        },
+        Cancel: function() {
+            propertiesDialog.dialog( "close" );
+        }
+    },
+    close: function() {
+        propertiesDialog.find("form")[0].reset();
+    }
 })
 
 //  $('#select-menu').selectmenu({

@@ -7,3 +7,5 @@ node_modules/
 *.rdb
 *.out
 package-lock.json
+snapshot-format.json
+
