@@ -1,5 +1,18 @@
-scrumblr
+scrumblr - a slightly modified version  
 ========
+
+why this repository and development branch
+----------
+when i first found scrumblr i found it very useful and fun to play with. i created some boards of my own to track things both at work and at home. after a while i noticed that some functions where missing in the original code. I found some a pull request done by ldidry where a concept of saving revisions where added and from that source i developed my branch of this tool. my new features are
+
+- a snapshot function to store a copy of the current board in the database
+- a restore function to load the snapshot
+- an export function to save a snapshot as a json file
+- a card form where some predefined properties for the card can be seen and edited
+
+why isn't this in the same repository as the original branch? it's a simple question of knowledge, i have never used git och github before and this is, along with my code changes, my way to publish this to everyone that are interesed in this nice tool.
+
+below is all the original information from [aliasaria/scrumblr](https://github.com/aliasaria/scrumblr) original github repository
 
 what is it
 ----------
