@@ -241,15 +241,34 @@ h2 {
 	 position: relative;
  }
  
+ .rows {
+	 width: 1000px;
+ }
+ 
+ .rows:after {
+	 content: "";
+	 display: table;
+	 clear: both;
+ }
+
+.snapshots {
+	float: left;
+	width: 50%;
+	color: #999;
+	font-family:  "Helvetica Neue Light", "HelveticaNeue-Light", 'Helvetica Neue', arial, serif;
+	font-size: 13px;
+}
+
  .names {
-	padding-left: 10px;
-	width: 980px;
+	float: left;
+	width: 50%;
+	/*padding-left: 10px;
+	width: 980px;*/
 	text-align: right;
-	color: #bbb;
+	color: #999;
 	letter-spacing: 4px;
 	font-family:  "Helvetica Neue Light", "HelveticaNeue-Light", 'Helvetica Neue', arial, serif;
 	font-size: 13px;
-
 }
 
 .names p {
@@ -267,7 +286,7 @@ h2 {
 }
 
 .names input {
-   padding: 0; //2px 8px 2px 2px;
+    padding: 0; /*2px 8px 2px 2px;*/
     border: none;
     outline: 0;
     width: 100px;
@@ -293,21 +312,20 @@ h2 {
     width: 100px;
     background: -webkit-gradient(linear, left top, left 25, from(#FFFFFF), color-stop(4%, #EEEEEE), to(#FFFFFF));
     background: -moz-linear-gradient(top, #FFFFFF, #EEEEEE 1px, #FFFFFF 25px);
-xopacity: .5;
+	xopacity: .5;
 	background: none;
     box-shadow: rgba(0,0,0, 0.1) 0px 0px 8px;
 	border-radius: 10px;
-	color: #aaa;
+	color: #333;
 	text-align: right;
 	font-family:  "Helvetica Neue Light", "HelveticaNeue-Light", 'Helvetica Neue', arial, serif;
 	font-size: 13px;
 	letter-spacing: 4px;
 	margin:0;
-
 }
 
 .names .focused {
-	color: #444;
+	color: #222;
 }
 
 .you-text {
@@ -658,8 +676,6 @@ img {
 }
 
 
-
-
 /* states and images */
 .ui-icon { width: 16px; height: 16px; background-image: url(../images/ui-icons_222222_256x240.png); }
 .ui-widget-content .ui-icon {background-image: url(../images/ui-icons_222222_256x240.png); }
@@ -692,11 +708,23 @@ img {
     cursor: pointer;
 }
 #revisions-list li img {
-    margin-left: 10px;
+	margin-left: 10px;
 }
 #snapshots-list li > * {
     cursor: pointer;
 }
+
+#snapshots-list li:hover {
+	cursor: pointer;
+	color: #333;
+}
+
 #snapshots-list li img {
     margin-left: 10px;
+	opacity: .3;
+}
+
+#snapshots-list li img:hover {
+    margin-left: 10px;
+	opacity: .6;
 }

@@ -27,7 +27,6 @@ block body
 		i#create-card.fa.fa-plus-circle.fa-2x.bottom-icon
 		i#smallify.fa.fa-expand.fa-2x.bottom-icon
 		i#create-snapshot.fa.fa-camera.fa-2x.bottom-icon
-		select#select-menu
 		i#restore-snapshot.fa.fa-clock-o.fa-2x.bottom-icon
 		i#import-snapshot.fa.fa-download.fa-2x.bottom-icon
 
@@ -57,12 +56,17 @@ block body
 		//	image(src="/images/stickers/sticker-redstar.png")
 
 
-	div.names
-		p connected:
-		//image#user-icon(src="/images/icons/cc/black/png/user_icon&16.png")
-		input#yourname-input
-		span.you-text (you)
-		ul#names-ul
+	div.rows
+		div.snapshots
+			p Restore points
+			div
+				ul#snapshots-list
+		div.names
+			p connected:
+			//image#user-icon(src="/images/icons/cc/black/png/user_icon&16.png")
+			input#yourname-input
+			span.you-text (you)
+			ul#names-ul
 
 	//div.export
 	//	h3 Export board
@@ -104,10 +108,6 @@ block body
 	//	div
 	//		ul#revisions-list
 
-	div.snapshots
-		H4 Restore points
-		div
-			ul#snapshots-list
 
 	//div.trash
 	//	i.fa.fa-trash-o.fa-lg.faded-icon

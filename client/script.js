@@ -681,6 +681,8 @@ function updateName(sid, name) {
 function boardResizeHappened(event, ui) {
     var newsize = ui.size;
 
+    $(".stickers").width( newsize.width);
+    $(".rows").width( newsize.width);
     sendAction('setBoardSize', newsize);
 }
 
@@ -689,6 +691,8 @@ function resizeBoard(size) {
         height: size.height,
         width: size.width
     });
+    $(".stickers").width( size.width);
+    $(".rows").width( size.width);
 }
 //////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////
@@ -831,9 +835,6 @@ function addSnapshot(timestamp) {
             data: timestamp
         });
     });
-
-    var opt = $('<option value="snapshot-'+timestamp+'">'+moment(timestamp).format('YYYY-MM-DD HH:mm:ss')+'</option>');
-    $('#select-menu').prepend(opt);
 }
 
 function importSnapshot() {
@@ -1098,7 +1099,7 @@ $(function() {
         });
     })
 
-var importDialog = $('#import-dialog').dialog({
+    var importDialog = $('#import-dialog').dialog({
         autoOpen: false,
         height: 200,
         width: 500,
@@ -1136,61 +1137,58 @@ var importDialog = $('#import-dialog').dialog({
         close: function() {
             importDialog.find("form")[0].reset();
         }
-})
+    })
 
-var importForm = importDialog.find("form").on("submit", function( evt) {
-    evt.preventDefault();
-    importSnapshot();
-})
+    var importForm = importDialog.find("form").on("submit", function( evt) {
+        evt.preventDefault();
+        importSnapshot();
+    })
 
-$('#import-snapshot').click(function() {
-    importDialog.dialog("open");
-})
+    $('#import-snapshot').click(function() {
+        importDialog.dialog("open");
+    })
 
-// Hidden dialog for update card properties
-var propertiesDialog = $('#properties-dialog').dialog({
-    autoOpen: false,
-    height: 400,
-    width: 500,
-    modal: true,
-    buttons: {
-        "Save": function(evt) {
-            evt.stopPropagation();
-            evt.preventDefault();
+    // Hidden dialog for update card properties
+    var propertiesDialog = $('#properties-dialog').dialog({
+        autoOpen: false,
+        height: 400,
+        width: 500,
+        modal: true,
+        buttons: {
+            "Save": function(evt) {
+                evt.stopPropagation();
+                evt.preventDefault();
 
-            // get form data
-            var data = {};
-            data.id = '';
-            data.properties = [];
-            $("#properties-dialog :input").each(function() {
-                if($(this).attr("name").length > 0) {
-                    if($(this).attr("name") === 'id') {
-                        data.id = $(this).val();
-                    } else {
-                        var prop = {};
-                        prop[$(this).attr("name")] = $(this).val();
-                        data.properties.push( prop);
+                // get form data
+                var data = {};
+                data.id = '';
+                data.properties = [];
+                $("#properties-dialog :input").each(function() {
+                    if($(this).attr("name").length > 0) {
+                        if($(this).attr("name") === 'id') {
+                            data.id = $(this).val();
+                        } else {
+                            var prop = {};
+                            prop[$(this).attr("name")] = $(this).val();
+                            data.properties.push( prop);
+                        }
                     }
-                }
-            });
+                });
                         
-            socket.json.send({
-                action: 'cardPropertiesSet',
-                data: data
-            });
-            $('#' +data.id).data( 'properties', data.properties);
-            propertiesDialog.dialog( "close" );
+                socket.json.send({
+                    action: 'cardPropertiesSet',
+                    data: data
+                });
+                $('#' +data.id).data( 'properties', data.properties);
+                propertiesDialog.dialog( "close" );
+            },
+            Cancel: function() {
+                propertiesDialog.dialog( "close" );
+            }
         },
-        Cancel: function() {
-            propertiesDialog.dialog( "close" );
+        close: function() {
+            propertiesDialog.find("form")[0].reset();
         }
-    },
-    close: function() {
-        propertiesDialog.find("form")[0].reset();
-    }
-})
+    })
 
-//  $('#select-menu').selectmenu({
-//      icons: { button: "ui-icon-caret-1-s" }
-//  });
 });
