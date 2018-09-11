@@ -98,7 +98,7 @@ function getMessage(m) {
         case 'createCard':
             //console.log(data);
             drawNewCard(data.id, data.text, data.x, data.y, data.rot, data.colour,
-                null, null, null);
+                data.prio, data.due, null, null, null);
             break;
 
         case 'deleteCard':
@@ -109,8 +109,16 @@ function getMessage(m) {
             );
             break;
 
-        case 'editCard':
+        case 'editCardText':
             $("#" + data.id).children('.content:first').text(data.value);
+            break;
+
+        case 'editCardPrio':
+            $("#" + data.id).children('.card-properties').children('.card-prio').text(data.value);
+            break;
+
+        case 'editCardDue':
+            $("#" + data.id).children('.card-properties').children('.card-due').text(data.value);
             break;
 
         case 'initColumns':
@@ -153,21 +161,6 @@ function getMessage(m) {
             download(data.filename, data.text);
             break;
 
-        //case 'addRevision':
-        //    addRevision(message.data);
-        //    break;
-
-        //case 'deleteRevision':
-        //    $('#revision-'+message.data).remove();
-        //    break;
-
-        //case 'initRevisions':
-        //    $('#revisions-list').empty();
-        //    for (var i = 0; i < message.data.length; i++) {
-        //        addRevision(message.data[i]);
-        //    }
-        //    break;
-
         case 'addSnapshot':
             addSnapshot(data);
             break;
@@ -207,7 +200,7 @@ $(document).bind('keyup', function(event) {
     keyTrap = event.which;
 });
 
-function drawNewCard(id, text, x, y, rot, colour, sticker, properties, animationspeed) {
+function drawNewCard(id, text, x, y, rot, colour, prio, due, sticker, properties, animationspeed) {
     //cards[id] = {id: id, text: text, x: x, y: y, rot: rot, colour: colour};
 
     var h = '<div id="' + id + '" class="card ' + colour +
@@ -218,9 +211,11 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, properties, animation
 	<img src="images/icons/iconic/raster/black/calendar_16x16.png" class="card-icon card-properties-icon" />\
 	<img class="card-image" src="images/' +
         colour + '-card.png">\
-	<div id="content:' + id +
-        '" class="content stickertarget droppable">' +
-        text + '</div><span class="filler"></span>\
+	<div id="content:' + id + '" class="content stickertarget droppable">' +
+        text + '</div>\
+    <span class="filler"></span>\
+    <span class="card-properties">Prio: <span class="card-prio">' + prio +
+    '</span>, Due: <span class="card-due">' + due + '</span></span>\
 	</div>';
 
     var card = $(h);
@@ -313,10 +308,12 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, properties, animation
         function() {
             $(this).addClass('hover');
             $(this).children('.card-icon').fadeIn(10);
+            //$(this).children('.card-properties').show();
         },
         function() {
             $(this).removeClass('hover');
             $(this).children('.card-icon').fadeOut(150);
+            //$(this).children('.card-properties').hide();
         }
     );
 
@@ -359,15 +356,51 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, properties, animation
     );
 
     card.children('.content').editable(function(value, settings) {
-        onCardChange(id, value);
+        onTextChange(id, value);
         return (value);
     }, {
         type: 'textarea',
-        submit: 'OK',
+        //submit: 'ok',
         style: 'inherit',
+        rows: '3',
         cssclass: 'card-edit-form',
         placeholder: 'Double Click to Edit.',
         onblur: 'submit',
+        event: 'dblclick', //event: 'mouseover'
+    });
+
+    card.children('.card-properties').children('.card-prio').editable( function(value, settings) {
+        onPrioChange(id, value);
+        return (value);
+    }, {
+        data: {'1': '1','2': '2','3': '3'},
+        type: 'select',
+        //submit: 'ok',
+        style: 'inherit',
+        cssclass: 'card-properties-form',
+        onblur: 'submit',
+        event: 'dblclick', //event: 'mouseover'
+    });
+
+    card.children('.card-properties').children('.card-due').editable( function(value, settings) {
+        onDueChange(id, value);
+        console.log( value );
+        return (value);
+    }, {
+        type: 'datepicker',
+        datepicker: {
+            format: "y-mm-dd",
+            firstDay: '1',
+            onSelect: function( value, inst) {
+                //console.log( id );
+                //console.log( value );
+                onDueChange(id, value);
+            }
+        },
+        submit: 'ok',
+        style: 'inherit',
+        cssclass: 'card-properties-form',
+        //onblur: 'submit',
         event: 'dblclick', //event: 'mouseover'
     });
 
@@ -377,8 +410,22 @@ function drawNewCard(id, text, x, y, rot, colour, sticker, properties, animation
 }
 
 
-function onCardChange(id, text) {
-    sendAction('editCard', {
+function onTextChange(id, text) {
+    sendAction('editCardText', {
+        id: id,
+        value: text
+    });
+}
+
+function onPrioChange(id, text) {
+    sendAction('editCardPrio', {
+        id: id,
+        value: text
+    });
+}
+
+function onDueChange(id, text) {
+    sendAction('editCardDue', {
         id: id,
         value: text
     });
@@ -418,8 +465,8 @@ function addSticker(cardId, stickerId) {
 //----------------------------------
 // cards
 //----------------------------------
-function createCard(id, text, x, y, rot, colour) {
-    drawNewCard(id, text, x, y, rot, colour, null, null, null);
+function createCard(id, text, x, y, rot, colour, prio, due) {
+    drawNewCard(id, text, x, y, rot, colour, prio, due, null, null, null);
 
     var action = "createCard";
 
@@ -461,6 +508,8 @@ function initCards(cardArray) {
             card.y,
             card.rot,
             card.colour,
+            card.prio,
+            card.due,
             card.sticker,
             card.properties,
             0
@@ -493,11 +542,11 @@ function drawNewColumn(columnName) {
         style: 'inherit',
         cssclass: 'card-edit-form',
         type: 'textarea',
-        placeholder: 'New',
+        placeholder: 'Double click to edit',
         onblur: 'submit',
-        width: '',
-        height: '',
-        xindicator: '<img src="images/ajax-loader.gif">',
+        //width: '',
+        //height: '',
+        //xindicator: '<img src="images/ajax-loader.gif">',
         event: 'dblclick', //event: 'mouseover'
     });
 
@@ -772,34 +821,6 @@ function download(filename, text) {
 
     document.body.removeChild(element);
 }
-
-//function addRevision(timestamp) {
-//    var li = $('<li id="revision-'+timestamp+'"></li>');
-//    var s1 = $('<span></span>');
-//    var s2 = $('<img src="../images/stickers/sticker-deletestar.png" alt="delete revision">');
-//    if (typeof(timestamp) === 'string') {
-//        timestamp = parseInt(timestamp);
-//    }
-//    s1.text(moment(timestamp).format('YYYY-MM-DD HH:mm:ss'));
-//
-//    li.append(s1);
-//    li.append(s2);
-//    //Add in reveresed chronological order
-//    $('#revisions-list').prepend(li);
-//
-//    s1.click(function() {
-//        socket.json.send({
-//            action: 'exportRevision',
-//            data: timestamp
-//        });
-//    });
-//    s2.click(function() {
-//        socket.json.send({
-//            action: 'deleteRevision',
-//            data: timestamp
-//        });
-//    });
-//}
 
 function addSnapshot(timestamp) {
     var li = $('<li id="snapshot-'+timestamp+'"></li>');
@@ -1189,6 +1210,87 @@ $(function() {
         close: function() {
             propertiesDialog.find("form")[0].reset();
         }
+    })
+
+    // Hidden dialog for adding board properties
+    var boardPropertiesDialog = $('#board-properties-dialog').dialog({
+        autoOpen: false,
+        height: 400,
+        width: 500,
+        modal: true,
+        buttons: {
+            "Save": function(evt) {
+                evt.stopPropagation();
+                evt.preventDefault();
+
+                // get form data
+                var data = {};
+                data.id = '';
+                data.properties = [];
+                $("#properties-dialog :input").each(function() {
+                    if($(this).attr("name").length > 0) {
+                        if($(this).attr("name") === 'id') {
+                            data.id = $(this).val();
+                        } else {
+                            var prop = {};
+                            prop[$(this).attr("name")] = $(this).val();
+                            data.properties.push( prop);
+                        }
+                    }
+                });
+                        
+                socket.json.send({
+                    action: 'cardPropertiesSet',
+                    data: data
+                });
+                $('#' +data.id).data( 'properties', data.properties);
+                boardPropertiesDialog.dialog( "close" );
+            },
+            Cancel: function() {
+                boardPropertiesDialog.dialog( "close" );
+            }
+        },
+        close: function() {
+            boardPropertiesDialog.find("form")[0].reset();
+            boardPropertiesDialog.dialog( "close" );
+        }
+    })
+
+    // Change icon and icon name before check in
+    $('#restore-snapshot').click(function() {
+        boardPropertiesDialog.dialog("open");
+    })
+
+    var boardProperties = [
+        { "Name": "priority", "Label": "Select card priority", "Type": 3, "Attributes": "", "Required": true },
+        { "Name": "assignto", "Label": "Assign to", "Type": 1, "Attributes": "type='text'", "Required": false }
+    ];
+ 
+    var inputTypes = [
+        { Name: "", Id: 0 },
+        { Name: "input-text", Id: 1 },
+        { Name: "input-file", Id: 2 },
+        { Name: "select", Id: 3 }
+    ];
+
+    $('#board-properties-grid').jsGrid({
+        width: "100%",
+        height: "95%",
+        inserting: true,
+        editing: true,
+        sorting: true,
+        paging: true,
+ 
+        data: boardProperties,
+ 
+        fields: [
+            { name: "Name", type: "text", width: 50, validate: "required" },
+            { name: "Label", type: "text", width: 150 },
+            { name: "Type", type: "select", items: inputTypes, valueField: "Id", textField: "Name" },
+            { name: "Options (Comma separated Name=Value pairs)", type: "text", width: 200 },
+            { name: "Required", type: "checkbox", title: "Is required", sorting: false },
+            { type: "control" }
+        ]
     })
 
 });

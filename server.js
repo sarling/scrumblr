@@ -164,9 +164,12 @@ io.sockets.on('connection', function (client) {
 				clean_data.y = scrub(data.y);
 				clean_data.rot = scrub(data.rot);
 				clean_data.colour = scrub(data.colour);
+				clean_data.prio = scrub(data.prio);
+				clean_data.due = scrub(data.due);
 
 				getRoom(client, function(room) {
-					createCard( room, clean_data.id, clean_data.text, clean_data.x, clean_data.y, clean_data.rot, clean_data.colour);
+					createCard( room, clean_data.id, clean_data.text, clean_data.x, clean_data.y, clean_data.rot, 
+						clean_data.colour, clean_data.prio, clean_data.due);
 				});
 
 				message_out = {
@@ -178,7 +181,7 @@ io.sockets.on('connection', function (client) {
 				broadcastToRoom( client, message_out );
 				break;
 
-			case 'editCard':
+			case 'editCardText':
 
 				clean_data = {};
 				clean_data.value = scrub(message.data.value);
@@ -186,11 +189,51 @@ io.sockets.on('connection', function (client) {
 
 				//send update to database
 				getRoom(client, function(room) {
-					db.cardEdit( room , clean_data.id, clean_data.value );
+					db.cardEditText( room , clean_data.id, clean_data.value );
 				});
 
 				message_out = {
-					action: 'editCard',
+					action: 'editCardText',
+					data: clean_data
+				};
+
+				broadcastToRoom(client, message_out);
+
+				break;
+
+				case 'editCardPrio':
+
+				clean_data = {};
+				clean_data.value = scrub(message.data.value);
+				clean_data.id = scrub(message.data.id);
+
+				//send update to database
+				getRoom(client, function(room) {
+					db.cardEditPrio( room , clean_data.id, clean_data.value );
+				});
+
+				message_out = {
+					action: 'editCardPrio',
+					data: clean_data
+				};
+
+				broadcastToRoom(client, message_out);
+
+				break;
+
+				case 'editCardDue':
+
+				clean_data = {};
+				clean_data.value = scrub(message.data.value);
+				clean_data.id = scrub(message.data.id);
+
+				//send update to database
+				getRoom(client, function(room) {
+					db.cardEditDue( room , clean_data.id, clean_data.value );
+				});
+
+				message_out = {
+					action: 'editCardDue',
 					data: clean_data
 				};
 
@@ -338,26 +381,10 @@ io.sockets.on('connection', function (client) {
 //				exportBoard( 'csv', client, message.data );
 //				break;
 //
-//			case 'exportJson':
-//				exportJson( client, message.data );
-//				break;
-
 			case 'importJson':
 				importJson( client, message.data );
 				break;
 
-//			case 'createRevision':
-//				createRevision( client, message.data );
-//				break;
-//
-//			case 'deleteRevision':
-//				deleteRevision( client, message.data );
-//				break;
-//
-//			case 'exportRevision':
-//				exportRevision( client, message.data );
-//				break;
-//
 			case 'createSnapshot':
 				createSnapshot( client, message.data );
 				break;
@@ -419,15 +446,6 @@ function initClient ( client )
 				}
 			);
 		});
-
-		//db.getRevisions( room, function (revisions) {
-		//	client.json.send(
-		//		{
-		//			action: 'initRevisions',
-		//			data: (revisions !== null) ? Object.keys(revisions) : new Array()
-		//		}
-		//	);
-		//});
 
 		db.getAllProperties( room, function (properties) {
 			client.json.send(
@@ -525,7 +543,7 @@ function broadcastToRoom ( client, message ) {
 }
 
 //----------------CARD FUNCTIONS
-function createCard( room, id, text, x, y, rot, colour ) {
+function createCard( room, id, text, x, y, rot, colour, prio, due ) {
 	var card = {
 		id: id,
 		colour: colour,
@@ -533,6 +551,8 @@ function createCard( room, id, text, x, y, rot, colour ) {
 		x: x,
 		y: y,
 		text: text,
+		prio: prio,
+		due: due,
 		sticker: null,
 		properties: null
 	};
@@ -575,16 +595,16 @@ function cleanAndInitializeDemoRoom()
 		db.createColumn( '/demo', 'Review' );
 		db.createColumn( '/demo', 'Complete' );
 
+		var timestamp = Date.now();
+		createCard('/demo', 'card1', 'Hello this is high prio card', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'yellow', '1', moment().add(14, 'days').format("YY-MM-DD"));
+		createCard('/demo', 'card2', 'Hello this is a new story.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'white', '3', moment().add(14, 'days').format("YY-MM-DD"));
+		createCard('/demo', 'card3', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'blue', '2', moment().add(21, 'days').format("YY-MM-DD"));
+		createCard('/demo', 'card4', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'green', '3', moment().add(28, 'days').format("YY-MM-DD"));
 
-		createCard('/demo', 'card1', 'Hello this is fun', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'yellow');
-		createCard('/demo', 'card2', 'Hello this is a new story.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'white');
-		createCard('/demo', 'card3', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'blue');
-		createCard('/demo', 'card4', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'green');
-
-		createCard('/demo', 'card5', 'Hello this is fun', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'yellow');
-		createCard('/demo', 'card6', 'Hello this is a new card.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'yellow');
-		createCard('/demo', 'card7', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'blue');
-		createCard('/demo', 'card8', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'green');
+		createCard('/demo', 'card5', 'Hello this is fun', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'yellow', '1', moment().add(14, 'days').format("YY-MM-DD"));
+		createCard('/demo', 'card6', 'Hello this is a new card.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'yellow', '1', moment().add(14, 'days').format("YY-MM-DD"));
+		createCard('/demo', 'card7', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'blue', '1', moment().add(14, 'days').format("YY-MM-DD"));
+		createCard('/demo', 'card8', '.', roundRand(600), roundRand(300), Math.random() * 10 - 5, 'green', '1', moment().add(14, 'days').format("YY-MM-DD"));
 	});
 }
 
@@ -688,39 +708,6 @@ function exportBoard( format, client, data )
 		});
 	});
 }
-
-// Export board in json, suitable for import
-function exportJson( client, data )
-{
-	var result = new Array();
-	getRoom(client, function(room) {
-		db.getAllCards( room , function (cards) {
-			db.getAllColumns ( room, function (columns) {
-				db.getTheme( room, function(theme) {
-					db.getBoardSize( room, function(size) {
-						if (theme === null) theme = 'bigcards';
-						if (size === null) size = { width: data.width, height: data.height };
-						result = JSON.stringify({
-							cards: cards,
-							columns: columns,
-							theme: theme,
-							size: size
-						});
-						client.json.send(
-							{
-								action: 'export',
-								data: {
-									filename: room.replace('/', '')+'.json',
-									text: result
-								}
-							}
-						);
-					});
-				});
-			});
-		});
-	});
-}
 */
 
 // Import board from json
@@ -741,6 +728,7 @@ function importJson( client, data )
 					if (card.id      !== undefined && card.colour     !== undefined &&
 						card.rot     !== undefined && card.x          !== undefined &&
 						card.y       !== undefined && card.text       !== undefined &&
+						card.prio    !== undefined && card.due        !== undefined &&
 						card.sticker !== undefined && card.properties !== undefined ) {
 						var c = {
 							id:         card.id,
@@ -749,6 +737,8 @@ function importJson( client, data )
 							x:          card.x,
 							y:          card.y,
 							text:       scrub(card.text),
+							prio:		card.prio,
+							due:		card.due,
 							sticker:    card.sticker,
 							properties: card.properties
 						};
@@ -799,40 +789,6 @@ function importJson( client, data )
 		});
 	});
 }
-//
-/*
-function createRevision( client, data )
-{
-	var result = new Array();
-	getRoom(client, function(room) {
-		db.getAllCards( room , function (cards) {
-			db.getAllColumns ( room, function (columns) {
-				db.getTheme( room, function(theme) {
-					db.getBoardSize( room, function(size) {
-						if (theme === null) theme = 'bigcards';
-						if (size === null) size = { width: data.width, height: data.height };
-						result = {
-							cards: cards,
-							columns: columns,
-							theme: theme,
-							size: size
-						};
-						var timestamp = Date.now();
-						db.getRevisions( room, function(revisions) {
-							if (revisions === null) revisions = {};
-							revisions[timestamp+''] = result;
-							db.setRevisions( room, revisions );
-							msg = { action: 'addRevision', data: timestamp };
-							broadcastToRoom(client, msg);
-							client.json.send(msg);
-						});
-					});
-				});
-			});
-		});
-	});
-}
-*/
 
 function createSnapshot( client, data )
 {
@@ -866,23 +822,6 @@ function createSnapshot( client, data )
 	});
 }
 
-/*
-function deleteRevision( client, timestamp )
-{
-	getRoom(client, function(room) {
-		db.getRevisions( room, function(revisions) {
-			if (revisions !== null && revisions[timestamp+''] !== undefined) {
-				delete revisions[timestamp+''];
-				db.setRevisions( room, revisions );
-			}
-			msg = { action: 'deleteRevision', data: timestamp };
-			broadcastToRoom(client, msg);
-			client.json.send(msg);
-		});
-	});
-}
-*/
-
 function deleteSnapshot( client, timestamp )
 {
 	getRoom(client, function(room) {
@@ -912,6 +851,7 @@ function restoreSnapshot( client, timestamp)
 						if (card.id      !== undefined && card.colour     !== undefined &&
 							card.rot     !== undefined && card.x          !== undefined &&
 							card.y       !== undefined && card.text       !== undefined &&
+							card.prio    !== undefined && card.due        !== undefined &&
 							card.sticker !== undefined && card.properties !== undefined ) {
 							var c = {
 								id:         card.id,
@@ -920,6 +860,8 @@ function restoreSnapshot( client, timestamp)
 								x:          card.x,
 								y:          card.y,
 								text:       scrub(card.text),
+								prio:		card.prio,
+								due:		card.due,
 								sticker:    card.sticker,
 								properties: card.properties
 							};
@@ -986,34 +928,6 @@ function exportSnapshot ( client, timestamp )
 		});
 	});
 }
-
-/*
-function exportRevision ( client, timestamp )
-{
-	getRoom(client, function(room) {
-		db.getRevisions( room, function(revisions) {
-			if (revisions !== null && revisions[timestamp+''] !== undefined) {
-				client.json.send(
-					{
-						action: 'export',
-						data: {
-							filename: room.replace('/', '')+'-'+timestamp+'.json',
-							text: JSON.stringify(revisions[timestamp+''])
-						}
-					}
-				);
-			} else {
-				client.json.send(
-					{
-						action: 'message',
-						data: 'Unable to find revision '+timestamp+'.'
-					}
-				);
-			}
-		});
-	});
-}
-*/
 
 /**************
  SETUP DATABASE ON FIRST RUN

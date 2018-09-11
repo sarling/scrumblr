@@ -40,6 +40,26 @@
 	z-index: -1000;
 }
 
+.card-properties {
+	/*display: none;*/
+	left: 35px;
+	top: 11px;
+	position: absolute;
+	display: inline;
+	white-space: nowrap;
+	align-content: flex-start;
+}
+
+.card-prio {
+	font-weight: bold;
+	overflow: hidden;
+}
+
+.card-due {
+	font-weight: bold;
+	overflow: hidden;
+}
+
 .content {
 	overflow: hidden;
 	display: block;
@@ -57,7 +77,7 @@
 
 	color: black;
 	text-align: center;
-	padding-top: 18px;
+	padding-top: 22px;
 	xline-height: 16px;
 
 	xopacity: .8;

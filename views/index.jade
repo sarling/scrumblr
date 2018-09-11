@@ -63,16 +63,9 @@ block body
 				ul#snapshots-list
 		div.names
 			p connected:
-			//image#user-icon(src="/images/icons/cc/black/png/user_icon&16.png")
 			input#yourname-input
 			span.you-text (you)
 			ul#names-ul
-
-	//div.export
-	//	h3 Export board
-	//	button#export-txt Text format
-	//	button#export-csv CSV format
-	//	button#export-json JSON format (for import in Scrumblr)
 
 	div(title="Select a JSON file to import")#import-dialog
 		form
@@ -82,32 +75,12 @@ block body
 	div(title="Card properties")#properties-dialog
 		form
 			fieldset
-				label(for="properties-card-id") Card identity
+				label(for="properties-card-id") Card identity 
 				input(name="id", disabled="disabled")#properties-card-id
 			fieldset#properties-fieldset
-				label(for="properties-card-priority") Priority
-				select(name="priority")#properties-card-priority
-					option 1
-					option 2
-					option 3
-					option 4
-					option 5
-				label(for="properties-card-assignto") Assign to
-				input(name="assignto")#properties-card-assignto
 
-	//div.import
-	//	h3 Import board
-	//	div
-	//		label(for="import-input") JSON file to import
-	//		input(type="file")#import-input
-	//		button#import-file Import
-
-	//div.revisions
-	//	H4 Revisions
-	//	button#create-revision Create a revision
-	//	div
-	//		ul#revisions-list
-
+	div(title="Define board properties")#board-properties-dialog
+		div#board-properties-grid
 
 	//div.trash
 	//	i.fa.fa-trash-o.fa-lg.faded-icon
